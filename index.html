@@ -2227,7 +2227,7 @@ function renderProtos(filterQ=''){
         <div class="cbody"><div class="ctxt"><strong>${esc(pr.title)}</strong> — ${esc(pr.desc||'')}</div>
           <div class="cmeta"><span class="stbadge st-pending">Pendente</span><span style="font-size:10px;color:var(--tx3);">${fmtD(pr.createdAt)}</span></div>
         </div>
-        <div class="cactions"><button class="bi del" onclick="deleteProto('${pr.id}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div>
+        <div class="cactions"><button class="bi del" onclick="deleteProto('${pr.id}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button><button class="bproto" onclick="openProto('${pr.id}')">Usar →</button></div>
       </div>`).join('');
   }else{sec.style.display='none';}
 }

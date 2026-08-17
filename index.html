@@ -773,9 +773,9 @@ body.focus-mode .focus-only{display:flex!important;}
             <select id="ncat"><option value="">Sem categoria</option></select>
           </div>
         </div>
-        <div class="fgrp" style="margin-bottom:10px;"><label>Frase pronta <span style="font-size:10px;color:var(--tx3);font-weight:400;">— use {VARIAVEL} para campos que mudam a cada atendimento</span></label>
+        <div class="fgrp" style="margin-bottom:10px;"><label>Frase pronta <span style="font-size:10px;color:var(--tx3);font-weight:400;">— use [VARIAVEL] para campos que mudam a cada atendimento</span></label>
   <div class="char-wrap">
-    <textarea id="ntxt" maxlength="600" placeholder="Ex: Olá {NOME}, seu protocolo é {NUMERO}. Aguarde {PRAZO} horas." oninput="updateCharCount('ntxt','ntxt_cc',600)"></textarea>
+    <textarea id="ntxt" maxlength="600" placeholder="Ex: Olá [NOME], seu protocolo é [NUMERO]. Aguarde [PRAZO] horas." oninput="updateCharCount('ntxt','ntxt_cc',600)"></textarea>
     <span class="char-counter" id="ntxt_cc">0/600</span>
   </div>
 </div>
@@ -901,9 +901,9 @@ body.focus-mode .focus-only{display:flex!important;}
           <div class="fgrp"><label>Ícone (emoji)</label><input id="picon" type="text" placeholder="📋" maxlength="2"></div>
         </div>
         <div class="fgrp" style="margin-bottom:10px;"><label>Descrição curta</label><input id="pdesc" type="text" placeholder="Quando usar este protocolo..."></div>
-        <div class="fgrp"><label>Template (use {VARIAVEL} para campos)</label>
+        <div class="fgrp"><label>Template (use [VARIAVEL] para campos)</label>
   <div class="char-wrap">
-    <textarea id="ptmpl" maxlength="1000" placeholder="Ex: Olá {NOME}, seu protocolo é {NUMERO}." style="min-height:90px;" oninput="updateCharCount('ptmpl','ptmpl_cc',1000)"></textarea>
+    <textarea id="ptmpl" maxlength="1000" placeholder="Ex: Olá [NOME], seu protocolo é [NUMERO]." style="min-height:90px;" oninput="updateCharCount('ptmpl','ptmpl_cc',1000)"></textarea>
     <span class="char-counter" id="ptmpl_cc">0/1000</span>
   </div>
 </div>

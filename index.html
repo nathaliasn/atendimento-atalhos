@@ -1913,7 +1913,7 @@ function updateVarPreview(){
     // Placeholder visual para campo vazio; valor preenchido é escapado
     const replacement=val
       ?esc(val)
-      :`<span style="color:var(--org);font-weight:700;">{${esc(v)}}</span>`;
+      :`<span style="color:var(--org);font-weight:700;">[${esc(v)}]</span>`;
     txt=fillTemplate(txt,esc(v),replacement);
   });
   document.getElementById('varPreview').innerHTML=txt.replace(/\n/g,'<br>');
@@ -1927,7 +1927,7 @@ function copyVarPhrase(){
     const el=document.getElementById('vv_'+v);
     const val=el?el.value.trim():'';
     if(!val)allFilled=false;
-    txt=fillTemplate(txt,v,val||('{'+v+'}'));
+    txt=fillTemplate(txt,v,val||('['+v+']'));
   });
   if(!allFilled){showToast('⚠️ Preencha todos os campos!','r');return;}
   clipboardWrite(txt).then(()=>{
@@ -2257,7 +2257,7 @@ function renderMeuEquipe(){
 }
 
 function extractVars(tmpl){
-  const m=tmpl.match(/\{([^}]+)\}/g)||[];
+  const m=tmpl.match(/\[([^\]]+)\]/g)||[];
   return[...new Set(m.map(x=>x.slice(1,-1).trim()).filter(x=>x.length>0))];
 }
 function openProto(id){
@@ -2274,9 +2274,9 @@ function openProto(id){
 }
 /* Escapa caracteres especiais de regex ao usar um valor dentro de new RegExp() */
 function rxEscape(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
-/* Substitui {VAR} no template tolerando espaços extras dentro das chaves: {VAR}, { VAR }, {  VAR} etc. */
+/* Substitui [VAR] no template tolerando espaços extras dentro dos colchetes: [VAR], [ VAR ], [  VAR] etc. */
 function fillTemplate(tmpl,varName,value){
-  const re=new RegExp('\\{\\s*'+rxEscape(varName)+'\\s*\\}','g');
+  const re=new RegExp('\\[\\s*'+rxEscape(varName)+'\\s*\\]','g');
   return tmpl.replace(re,value);
 }
 function updateProtoPreview(){
@@ -2288,7 +2288,7 @@ function updateProtoPreview(){
     const val=el?el.value.trim():'';
     const replacement=val
       ?esc(val)
-      :`<span style="color:var(--org);font-weight:700;">{${esc(v)}}</span>`;
+      :`<span style="color:var(--org);font-weight:700;">[${esc(v)}]</span>`;
     txt=fillTemplate(txt,esc(v),replacement);
   });
   document.getElementById('protoPreview').innerHTML=txt.replace(/\n/g,'<br>');
@@ -2302,7 +2302,7 @@ function copyProto(){
     const el=document.getElementById('pv_'+v);
     const val=el?el.value.trim():'';
     if(!val)ok=false;
-    txt=fillTemplate(txt,v,val||('{'+v+'}'));
+    txt=fillTemplate(txt,v,val||('['+v+']'));
   });
   if(!ok){showToast('⚠️ Preencha todos os campos!','r');return;}
   clipboardWrite(txt).then(()=>{

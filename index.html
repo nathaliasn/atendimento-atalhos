@@ -1751,7 +1751,7 @@ function buildCatChips(filteredIds){
   cats.forEach(cat=>{
     if(!counts[cat])return;
     const isDim=fset&&!fcounts[cat]&&activecat!==cat;
-    const onclk=isDim?'':('onclick="setCat('+JSON.stringify(cat)+',this)"');
+    const onclk=isDim?'':('onclick="setCat('+JSON.stringify(cat).replace(/"/g,'&quot;')+',this)"');
     html+=`<button class="chip${activecat===cat?' active':''}${isDim?' dim':''}" ${onclk}>${esc(cat)} <span class="chip-count">${fset?(fcounts[cat]||0):counts[cat]}</span></button>`;
   });
   document.getElementById('catChips').innerHTML=html;
@@ -1831,7 +1831,7 @@ function renderList(list,maxUses){
   if(!list.length){
     const q2=document.getElementById('searchInput')?.value||'';
     const qtrimmed=q2.replace(/^#/,'').trim();
-    const suggestion=qtrimmed?`<div class="empty-suggest"><button onclick="prefilledSuggest(${JSON.stringify(qtrimmed)})">✍️ Sugerir "#${esc(qtrimmed)}"</button></div>`:'';
+    const suggestion=qtrimmed?`<div class="empty-suggest"><button onclick="prefilledSuggest(${JSON.stringify(qtrimmed).replace(/"/g,'&quot;')})">✍️ Sugerir "#${esc(qtrimmed)}"</button></div>`:'';
     box.innerHTML=`<div class="empty"><strong>🔍</strong>${qtrimmed?`Nenhuma frase para "<b>${esc(qtrimmed)}</b>".`:'Nenhuma frase encontrada.'}${suggestion}</div>`;
   }
   else{box.innerHTML=list.map(p=>phraseCard(p,maxUses,'card-anim')).join('');requestAnimationFrame(checkExpandButtons);}
@@ -2117,7 +2117,7 @@ function renderMyHistory(){
     const items=document.getElementById('myHistoryItems');
     if(!hist.length||!strip||!items){if(strip)strip.style.display='none';return;}
     strip.style.display='';
-    items.innerHTML=hist.map(h=>`<button class="mhs-tag" onclick="quickSearch(${JSON.stringify('#'+h.tag)})" title="Buscar #${esc(h.tag)}">#${esc(h.tag)}</button>`).join('');
+    items.innerHTML=hist.map(h=>`<button class="mhs-tag" onclick="quickSearch(${JSON.stringify('#'+h.tag).replace(/"/g,'&quot;')})" title="Buscar #${esc(h.tag)}">#${esc(h.tag)}</button>`).join('');
   }catch(e){}
 }
 function clearMyHistory(){

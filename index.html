@@ -775,8 +775,8 @@ body.focus-mode .focus-only{display:flex!important;}
         </div>
         <div class="fgrp" style="margin-bottom:10px;"><label>Frase pronta <span style="font-size:10px;color:var(--tx3);font-weight:400;">— use [VARIAVEL] para campos que mudam a cada atendimento</span></label>
   <div class="char-wrap">
-    <textarea id="ntxt" maxlength="600" placeholder="Ex: Olá [NOME], seu protocolo é [NUMERO]. Aguarde [PRAZO] horas." oninput="updateCharCount('ntxt','ntxt_cc',600)"></textarea>
-    <span class="char-counter" id="ntxt_cc">0/600</span>
+    <textarea id="ntxt" placeholder="Ex: Olá [NOME], seu protocolo é [NUMERO]. Aguarde [PRAZO] horas." oninput="updateCharCount('ntxt','ntxt_cc')"></textarea>
+    <span class="char-counter" id="ntxt_cc">0</span>
   </div>
 </div>
         <div class="fgrp" style="margin-bottom:10px;">
@@ -903,8 +903,8 @@ body.focus-mode .focus-only{display:flex!important;}
         <div class="fgrp" style="margin-bottom:10px;"><label>Descrição curta</label><input id="pdesc" type="text" placeholder="Quando usar este protocolo..."></div>
         <div class="fgrp"><label>Template (use [VARIAVEL] para campos)</label>
   <div class="char-wrap">
-    <textarea id="ptmpl" maxlength="1000" placeholder="Ex: Olá [NOME], seu protocolo é [NUMERO]." style="min-height:90px;" oninput="updateCharCount('ptmpl','ptmpl_cc',1000)"></textarea>
-    <span class="char-counter" id="ptmpl_cc">0/1000</span>
+    <textarea id="ptmpl" placeholder="Ex: Olá [NOME], seu protocolo é [NUMERO]." style="min-height:90px;" oninput="updateCharCount('ptmpl','ptmpl_cc')"></textarea>
+    <span class="char-counter" id="ptmpl_cc">0</span>
   </div>
 </div>
         <div class="ff">
@@ -1021,8 +1021,8 @@ body.focus-mode .focus-only{display:flex!important;}
     </div>
     <div class="fgrp" style="margin-bottom:10px;"><label>Frase</label>
   <div class="char-wrap">
-    <textarea id="etxt" maxlength="600" style="min-height:90px;" oninput="updateCharCount('etxt','etxt_cc',600)"></textarea>
-    <span class="char-counter" id="etxt_cc">0/600</span>
+    <textarea id="etxt" style="min-height:90px;" oninput="updateCharCount('etxt','etxt_cc')"></textarea>
+    <span class="char-counter" id="etxt_cc">0</span>
   </div>
 </div>
     <div class="fgrp" style="margin-bottom:12px;">
@@ -1056,8 +1056,8 @@ body.focus-mode .focus-only{display:flex!important;}
     <div class="fgrp" style="margin-bottom:10px;"><label>Descrição</label><input id="epdesc" type="text"></div>
     <div class="fgrp"><label>Template</label>
   <div class="char-wrap">
-    <textarea id="eptmpl" maxlength="1000" style="min-height:90px;" oninput="updateCharCount('eptmpl','eptmpl_cc',1000)"></textarea>
-    <span class="char-counter" id="eptmpl_cc">0/1000</span>
+    <textarea id="eptmpl" style="min-height:90px;" oninput="updateCharCount('eptmpl','eptmpl_cc')"></textarea>
+    <span class="char-counter" id="eptmpl_cc">0</span>
   </div>
 </div>
     <div class="mftr">
@@ -2022,7 +2022,7 @@ function openEdit(id){
   }else{hs.style.display='none';}
   document.getElementById('editModal').classList.add('open');
   // popular char counters
-  updateCharCount('etxt','etxt_cc',600);
+  updateCharCount('etxt','etxt_cc');
 }
 function revertTo(phraseId,histIdx){
   const p=DB.phrases.find(x=>x.id===phraseId);if(!p)return;
@@ -2353,7 +2353,7 @@ function openEditProto(id){
   document.getElementById('epdesc').value=pr.desc||'';
   document.getElementById('eptmpl').value=pr.template;
   document.getElementById('editProtoModal').classList.add('open');
-  updateCharCount('eptmpl','eptmpl_cc',1000);
+  updateCharCount('eptmpl','eptmpl_cc');
 }
 async function saveProtoEdit(){
   const pr=DB.protocols.find(x=>x.id===editingProtoId);if(!pr)return;
@@ -3042,8 +3042,13 @@ function updateCharCount(fieldId,counterId,max){
   const cc=document.getElementById(counterId);
   if(!el||!cc)return;
   const n=el.value.length;
-  cc.textContent=n+'/'+max;
-  cc.className='char-counter'+(n>max*0.9?' warn':'')+(n>=max?' over':'');
+  if(max){
+    cc.textContent=n+'/'+max;
+    cc.className='char-counter'+(n>max*0.9?' warn':'')+(n>=max?' over':'');
+  }else{
+    cc.textContent=n;
+    cc.className='char-counter';
+  }
 }
 
 /* ══════ PREFILLED SUGGEST ══════ */

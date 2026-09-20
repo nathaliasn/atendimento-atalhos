@@ -843,7 +843,9 @@ body.focus-mode .focus-only{display:flex!important;}
           <span>✅ Checklist do atendimento</span>
           <div class="checklist-hd-btns">
             <button onclick="resetChecklist()" title="Resetar todos os itens">↺ Resetar</button>
-            <button onclick="loadChecklistTemplate()" title="Carregar modelo padrão">📋 Modelo</button>
+            <select id="chkTemplateSelect" onchange="loadChecklistTemplateById(this.value)" title="Carregar um modelo de checklist" style="font-size:11px;background:var(--sur2);border:1px solid var(--bor);border-radius:6px;padding:3px 7px;cursor:pointer;color:var(--tx2);font-family:'DM Sans',sans-serif;font-weight:600;">
+              <option value="">📋 Carregar modelo…</option>
+            </select>
           </div>
         </div>
         <div class="checklist-items" id="checklistItems"></div>
@@ -955,6 +957,7 @@ body.focus-mode .focus-only{display:flex!important;}
         <button class="atab" onclick="swAdm('categories',this)">🏷️ Categorias</button>
         <button class="atab" onclick="swAdm('users',this)">👥 Usuários</button>
         <button class="atab" onclick="swAdm('teams',this)">🏢 Equipes</button>
+        <button class="atab" onclick="swAdm('checklists',this)">📝 Checklists</button>
         <button class="atab" id="tabHistory" onclick="swAdm('history',this)">🕐 Histórico</button>
         <button class="atab" onclick="swAdm('allphrases',this)">📋 Frases</button>
       </div>
@@ -965,6 +968,7 @@ body.focus-mode .focus-only{display:flex!important;}
       <div id="admCategories" class="atc"></div>
       <div id="admUsers" class="atc"></div>
       <div id="admTeams" class="atc"></div>
+      <div id="admChecklists" class="atc"></div>
       <div id="admHistory" class="atc"></div>
       <div id="admAllphrases" class="atc"></div>
     </div>
@@ -1063,6 +1067,21 @@ body.focus-mode .focus-only{display:flex!important;}
     <div class="mftr">
       <button class="bcancel" onclick="closeModal('editProtoModal')">Cancelar</button>
       <button class="bconfirm" onclick="saveProtoEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Checklist Template -->
+<div class="mov" id="editChecklistTemplateModal">
+  <div class="mbox">
+    <h3>✏️ Editar checklist</h3>
+    <div class="fgrp" style="margin-bottom:10px;"><label>Nome</label><input id="ecktName" type="text"></div>
+    <div class="fgrp"><label>Itens <span style="font-size:10px;color:var(--tx3);font-weight:400;">— um por linha</span></label>
+      <textarea id="ecktItems" style="min-height:130px;padding:10px 12px;border:none;border-radius:var(--rs);background:var(--sur2);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--txt);outline:none;width:100%;resize:vertical;line-height:1.6;"></textarea>
+    </div>
+    <div class="mftr">
+      <button class="bcancel" onclick="closeModal('editChecklistTemplateModal')">Cancelar</button>
+      <button class="bconfirm" onclick="saveChecklistTemplateEdit()">Salvar</button>
     </div>
   </div>
 </div>
@@ -1239,7 +1258,7 @@ function now(){return Date.now();}
 function dago(d){return now()-d*86400000;}
 
 /* ══════ ESTADO GLOBAL ══════ */
-let DB={users:[],phrases:[],protocols:[],history:[],notifications:[],categories:[],broadcasts:[],teams:[],settings:{darkMode:null}};
+let DB={users:[],phrases:[],protocols:[],history:[],notifications:[],categories:[],broadcasts:[],teams:[],checklistTemplates:[],settings:{darkMode:null}};
 
 async function loadDB(silent=false){
   try{
@@ -1276,6 +1295,11 @@ async function loadDB(silent=false){
       const teams=await sbGet('teams','order=name.asc');
       DB.teams=(teams||[]).map(t=>({...t,createdAt:t.created_at}));
     }catch(e){console.error('loadDB teams error (tabela teams existe no Supabase?):',e);}
+    // Checklists padrão (criados pelo líder): busca separada e tolerante a falha (tabela pode ainda não existir)
+    try{
+      const cktpls=await sbGet('checklist_templates','order=created_at.asc');
+      DB.checklistTemplates=(cktpls||[]).map(t=>({...t,createdAt:t.created_at,createdBy:t.created_by,items:t.items||[]}));
+    }catch(e){console.error('loadDB checklist_templates error (tabela checklist_templates existe no Supabase?):',e);}
   }catch(e){console.error('loadDB error',e);}
   finally{if(!silent)showLoadingOverlay(false);}
 }
@@ -1475,6 +1499,7 @@ function showApp(){
   // Inicializar novas funcionalidades
   resetSessionTimer();
   loadChecklistFromStorage();
+  populateChecklistTemplateSelect();
   loadSnippets();
   loadQuickNote();
   setTimeout(updateMyStats,500);
@@ -1515,6 +1540,7 @@ function swAdm(name,btn){
     if(name==='categories')renderCategories();
     if(name==='users')renderUsers();
     if(name==='teams')renderTeams();
+    if(name==='checklists')renderChecklistTemplates();
     if(name==='history')renderHistory();
     if(name==='allphrases')renderAllPhrases();
   });
@@ -1729,6 +1755,7 @@ async function autoRefreshDB(){
     await loadDB(true); // silencioso: sem overlay de carregamento, não atrapalha quem tá usando
     renderAll();
     checkUrgentBroadcast();
+    populateChecklistTemplateSelect();
   }catch(e){console.error('autoRefreshDB error',e);}
 }
 function startAutoRefresh(){
@@ -3229,11 +3256,121 @@ function resetChecklist(){
   saveChecklistToStorage();renderChecklist();
   showToast('Checklist resetado');
 }
-function loadChecklistTemplate(){
-  showConfirm('Carregar modelo','Isso substituirá o checklist atual pelo modelo padrão. Continuar?',()=>{
-    _checklist=CHECKLIST_TEMPLATE.map((t,i)=>({id:'c'+crypto.randomUUID(),text:t,done:false}));
+/* Popula o seletor de modelos: "Padrão" (fixo) + os criados pelo líder no Supabase */
+function populateChecklistTemplateSelect(){
+  const sel=document.getElementById('chkTemplateSelect');
+  if(!sel)return;
+  const opts=['<option value="">📋 Carregar modelo…</option>','<option value="__default__">Padrão</option>'];
+  (DB.checklistTemplates||[]).forEach(t=>opts.push(`<option value="${esc(t.id)}">${esc(t.name)}</option>`));
+  sel.innerHTML=opts.join('');
+}
+function loadChecklistTemplateById(id){
+  const sel=document.getElementById('chkTemplateSelect');
+  if(!id){return;}
+  let name,items;
+  if(id==='__default__'){name='Padrão';items=CHECKLIST_TEMPLATE;}
+  else{
+    const t=(DB.checklistTemplates||[]).find(x=>x.id===id);
+    if(!t){if(sel)sel.value='';return;}
+    name=t.name;items=t.items||[];
+  }
+  showConfirm('Carregar modelo',`Isso substituirá o checklist atual pelo modelo "${name}". Continuar?`,()=>{
+    _checklist=items.map(t=>({id:'c'+crypto.randomUUID(),text:t,done:false}));
     saveChecklistToStorage();renderChecklist();
-    showToast('Modelo carregado!','g');
+    showToast('Modelo "'+name+'" carregado!','g');
+  });
+  if(sel)sel.value='';
+}
+/* Mantido por compatibilidade (não usado mais na UI atual) */
+function loadChecklistTemplate(){loadChecklistTemplateById('__default__');}
+
+/* ══════ CHECKLISTS PADRÃO (gerenciados pelo líder/admin) ══════ */
+function renderChecklistTemplates(){
+  const box=document.getElementById('admChecklists');
+  if(!box)return;
+  const tpls=DB.checklistTemplates||[];
+  const rows=tpls.map(t=>`
+    <div class="card" style="margin-bottom:7px;align-items:center;">
+      <div class="cbody">
+        <div style="font-size:13.5px;font-weight:700;color:var(--txt);margin-bottom:3px;">${esc(t.name)}</div>
+        <div style="font-size:11px;color:var(--tx2);">${(t.items||[]).length} item${(t.items||[]).length!==1?'s':''} · ${esc((t.items||[]).slice(0,3).join(' · '))}${(t.items||[]).length>3?'…':''}</div>
+      </div>
+      <div class="cactions">
+        <button class="bi" onclick="openEditChecklistTemplate('${t.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>
+        <button class="bi del" onclick="deleteChecklistTemplate('${t.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div>
+    </div>`).join('');
+  box.innerHTML=`
+    <div class="sl" style="margin-bottom:4px;">Checklists padrão da equipe <span class="cb">${tpls.length}</span></div>
+    <p style="font-size:12px;color:var(--tx2);margin-bottom:14px;">Modelos que aparecem no seletor "📋 Carregar modelo…" da aba Atendimento, pra qualquer pessoa da equipe usar. O checklist "Padrão" (fixo) sempre aparece também.</p>
+    ${rows||'<div class="empty">Nenhum checklist personalizado ainda.</div>'}
+    <div class="nuform" style="margin-top:16px;">
+      <h3>➕ Novo checklist</h3>
+      <div class="fgrp" style="margin-bottom:10px;"><label>Nome</label><input id="cktName" type="text" placeholder="ex: Redirecionamento não funciona"></div>
+      <div class="fgrp" style="margin-bottom:10px;"><label>Itens <span style="font-size:10px;color:var(--tx3);font-weight:400;">— um por linha</span></label>
+        <textarea id="cktItems" placeholder="Confirmar CPF do cliente&#10;Testar redirecionamento na porta X&#10;Verificar firmware do roteador&#10;Abrir chamado técnico" style="min-height:110px;padding:10px 12px;border:none;border-radius:var(--rs);background:var(--sur);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--txt);outline:none;width:100%;resize:vertical;line-height:1.6;"></textarea>
+      </div>
+      <button class="bsave" onclick="addChecklistTemplate()">Criar checklist</button>
+    </div>`;
+}
+async function addChecklistTemplate(){
+  const name=document.getElementById('cktName').value.trim();
+  const raw=document.getElementById('cktItems').value;
+  const items=raw.split('\n').map(x=>x.trim()).filter(Boolean);
+  if(!name){showToast('Dê um nome ao checklist','r');return;}
+  if(!items.length){showToast('Adicione pelo menos um item','r');return;}
+  try{
+    const t={id:'ckt'+crypto.randomUUID(),name,items,created_at:now(),created_by:CU.id};
+    await sbPost('checklist_templates',t);
+    DB.checklistTemplates.push({...t,createdAt:t.created_at,createdBy:t.created_by});
+    document.getElementById('cktName').value='';
+    document.getElementById('cktItems').value='';
+    renderChecklistTemplates();populateChecklistTemplateSelect();
+    showToast('✓ Checklist criado!','g');
+  }catch(e){
+    console.error('Falha ao criar checklist (a tabela "checklist_templates" existe no Supabase?):',e);
+    showToast('❌ Erro ao criar: '+String(e.message||'veja o console').slice(0,120),'r');
+  }
+}
+let editingChecklistTemplateId=null;
+function openEditChecklistTemplate(id){
+  const t=(DB.checklistTemplates||[]).find(x=>x.id===id);if(!t)return;
+  editingChecklistTemplateId=id;
+  document.getElementById('ecktName').value=t.name;
+  document.getElementById('ecktItems').value=(t.items||[]).join('\n');
+  document.getElementById('editChecklistTemplateModal').classList.add('open');
+}
+async function saveChecklistTemplateEdit(){
+  if(!editingChecklistTemplateId)return;
+  const t=(DB.checklistTemplates||[]).find(x=>x.id===editingChecklistTemplateId);if(!t)return;
+  const name=document.getElementById('ecktName').value.trim();
+  const raw=document.getElementById('ecktItems').value;
+  const items=raw.split('\n').map(x=>x.trim()).filter(Boolean);
+  if(!name){showToast('Dê um nome ao checklist','r');return;}
+  if(!items.length){showToast('Adicione pelo menos um item','r');return;}
+  try{
+    await sbPatch('checklist_templates','id=eq.'+editingChecklistTemplateId,{name,items});
+    t.name=name;t.items=items;
+    closeModal('editChecklistTemplateModal');
+    renderChecklistTemplates();populateChecklistTemplateSelect();
+    showToast('✓ Checklist atualizado!','g');
+  }catch(e){
+    console.error('Falha ao editar checklist:',e);
+    showToast('❌ Erro ao salvar: '+String(e.message||'veja o console').slice(0,120),'r');
+  }
+}
+async function deleteChecklistTemplate(id){
+  const t=(DB.checklistTemplates||[]).find(x=>x.id===id);if(!t)return;
+  showConfirm('Excluir checklist',`Excluir o checklist "${esc(t.name)}"? Quem já carregou ele continua com os itens no próprio checklist pessoal.`,async()=>{
+    try{
+      await sbDelete('checklist_templates','id=eq.'+id);
+      DB.checklistTemplates=DB.checklistTemplates.filter(x=>x.id!==id);
+      renderChecklistTemplates();populateChecklistTemplateSelect();
+      showToast('Checklist removido','r');
+    }catch(e){
+      console.error('Falha ao excluir checklist:',e);
+      showToast('❌ Erro ao excluir: '+String(e.message||'veja o console').slice(0,120),'r');
+    }
   });
 }
 

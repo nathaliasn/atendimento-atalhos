@@ -3125,8 +3125,8 @@ window.addEventListener('beforeunload',(e)=>{
   if(editingId){e.preventDefault();e.returnValue='Você tem uma edição em andamento. Deseja sair?';}
 });
 /* ══════ SESSION TIMEOUT (30 min de inatividade) ══════ */
-const SESSION_TIMEOUT=30*60*1000; // 30 min
-const SESSION_WARN_AT=5*60*1000;  // avisa 5 min antes
+const SESSION_TIMEOUT=12*60*60*1000; // 12 horas
+const SESSION_WARN_AT=10*60*1000;   // avisa 10 min antes
 let _sessionTimer=null;
 let _sessionWarnTimer=null;
 let _sessionExpireAt=0;
